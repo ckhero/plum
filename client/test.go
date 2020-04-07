@@ -6,6 +6,7 @@ import (
 	"github.com/afex/hystrix-go/hystrix"
 	"github.com/micro/go-micro/client"
 	greeter "plum/proto"
+	"reflect"
 )
 
 type ProdsWrapper struct { //官方提供的例子，创建自己的struct，嵌套go-micro的client
@@ -59,11 +60,28 @@ func (this *ProdsWrapper) Call(ctx context.Context, req client.Request, rsp inte
 		return this.Client.Call(ctx, req, rsp) //调用rpc api接口
 	}, func(e error) error { //降级函数
 		//defaultProds(rsp)
-		fmt.Println(e.Error())
+		testtest(e, rsp)
 		return nil
 	})
 }
+func testtest(e error, rsp interface{})  {
+	fmt.Println(e.Error())
+	ans :=""
+	fmt.Println(reflect.TypeOf(rsp))
 
+	switch rsp.(type) {
+	case *greeter.HelloResponse:
+		ans ="aaaaa";
+		break
+	default:
+		ans = "aaaadfasdfas"
+		break
+
+
+	}
+	fmt.Println(ans)
+
+}
 func NewProdsWrapper(c client.Client) client.Client {
 	return &ProdsWrapper{c}
 }
