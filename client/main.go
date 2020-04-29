@@ -8,10 +8,12 @@ import (
 	"net"
 	. "net/http"
 	greeter "plum/proto"
+	"sync"
 	"time"
 )
-
+var once sync.Once
 func main() {
+	once.Do()
 	hystrixStreamHandler := hystrix.NewStreamHandler()
 	hystrixStreamHandler.Start()
 	go ListenAndServe(net.JoinHostPort("", "81"), hystrixStreamHandler)

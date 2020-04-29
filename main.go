@@ -14,7 +14,15 @@ import (
 	service2 "plum/service"
 )
 
+type Test struct {
+	A string `json:"a"`
+	BB Test2 `json:"bb"`
+}
+type Test2 struct {
+	B string `json:"b"`
+}
 func main() {
+
 	service := micro.NewService(
 		micro.Name("greeter"),
 	)
@@ -27,14 +35,7 @@ func main() {
 		}),
 		))
 	greeter.RegisterGreeterHandler(service.Server(), new(service2.Greeter))
-	//engine := gin.New()
-	////注册顺序很重要，勿轻易调整
-	//engine.Use(
-	//	middleware.GinRecovery(), //必须放在第一个
-	//	middleware.LoggerToStdout(),
-	//	middleware.Cors(),
-	//)
-	//middleware.RegisterRoute(engine)
+
 	//srv.Handle("/", engine)
 	if err := service.Run(); err != nil {
 		log.Fatal(err)

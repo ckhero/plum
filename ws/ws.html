@@ -1,10 +1,248 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>$Title$</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta charset="utf-8"/>
+    <title>BrainBreak</title>
 </head>
 <body>
-$END$
+<style>
+    body {
+        background-color: #ffffff;
+        padding: 2px;
+    }
+    .span-text-head {
+        width: 10%;
+        text-align: left;
+        display: inline-block;
+        float: left;
+        height: 100%;
+        color: black;
+        position: relative;
+        float: left;
+
+    }
+
+    .span-text-head-small {
+        width: 6%;
+        text-align: left;
+        display: inline-block;
+        float: left;
+        height: 100%;
+        color: black;
+        position: relative;
+        float: left;
+
+    }
+    .span-text {
+        width: 40%;
+        text-align: left;
+        display: inline-block;
+        float: left;
+        height: 100%;
+        position: relative;
+        float: left;
+    }
+</style>
+
+<!--<form>
+    <p  type="hidden">
+        字符串: <input id="content" type="text" placeholder="输入要转换的字符串">
+    </p>
+</form>!-->
+<body>
+<div style="text-align: center; width: 100%; height: 100%;
+            vertical-align: middle;position: relative">
+    <h1>BrainBreak</h1>
+    <span class="span-text-head">房间: </span>
+    <span class="span-text" id ="room" style="width: 50%;">1255428885839876000</span>
+    <span class="span-text-head">状态: </span>
+    <span class="span-text" id ="result" style="width: 30%;">初始化</span>
+</div>
+<div style="margin-top: 30px; border-radius: 5px;position: relative">
+    得分:
+</div>
+<div id="score" style="background-color: white;  ">
+</div>
+<div id="question" style="background-color: white; padding: 10px; margin: 20px; border-radius: 5px"></div>
+<div id="options" style="background-color: white; padding: 10px; margin: 20px; border-radius: 5px"></div>
+</body>
+
+<script type="text/javascript">
+    var sock = null;
+    var canSend = true
+    // var wsuri = "ws://172.16.42.31:53743/eday/brain-storm/battle/" + GetQueryValue1("uuid");
+    var wsuri = "ws://localhost:9090/eday/brain-storm/battle/" + GetQueryValue1("uuid");
+    createWebSocket()
+    sock.onopen = function() {
+        result.innerHTML = "匹配中...";
+    }
+    window.onbeforeunload = function(event) {
+        console.log("关闭WebSocket连接！");
+        sock.close();
+    }
+    function createWebSocket() {
+        try {
+            sock = new WebSocket(wsuri);
+            initEventHandle();
+        } catch (e) {
+            reconnect(url);
+        }
+    }
+    function initEventHandle() {
+
+        sock.onclose = function () {
+            console.log("close")
+            // reconnect();
+        };
+        sock.onerror = function () {
+            console.log("error")
+
+            // reconnect();
+        };
+        /**
+         * 接收消息
+         * @param e
+         */
+        sock.onmessage = function(e) {
+            var result = document.getElementById('result');
+            var room = document.getElementById('room');
+            var question = document.getElementById('question');
+            var options = document.getElementById('options');
+            var score = document.getElementById('score');
+            data = JSON.parse(e.data)
+            console.log(data.data)
+            if (data.code == 0) {
+                result.innerHTML = conertToText(data.data.action);
+                console.log(data.data.nextAction)
+                if (data.data.nextAction == "reconn") {
+                    senddefault()
+                }
+                if (data.data.action == "next") {
+
+                    canSend = true
+
+                    room.innerHTML = data.data.room.roomUuid;
+                    options.innerHTML = ""
+                    question.innerHTML = ""
+                    question.innerHTML = "题目：" + data.data.question.questionDesc
+                    questionData = data.data.question
+                    list = questionData.questionOptionList
+                    console.log(list)
+                    str = ""
+                    if (list != null) {
+                        for (let i = 0; i < list.length; i++) {
+                            str += "<div style='padding:10px;margin: 10px' onclick='sendres(\"" + list[i].questionOptionName + "\"," + questionData.questionId +")'>"
+                            str += list[i].questionOptionName + ":" + list[i].questionOptionDesc
+                            str += "</div>"
+                        }
+                    }
+
+                    console.log(str)
+                    options.innerHTML = str
+                    score.innerHTML = "";
+                    intervalID =setInterval("checkSend()",10000);
+                } else if (data.data.action == "end") {
+                    canSend = true
+
+                    score.innerHTML = "";
+                    options.innerHTML = ""
+                    question.innerHTML = ""
+                    aaaa = data.data.score
+                    console.log(document.getElementById('score').innerText)
+                    score.innerHTML = document.getElementById('score').innerText + "<span class='span-text-head' style='width: 50%;display: inline'>用户:</span><span class='span-text'>"+ aaaa.userUuid +"</span><span class='span-text-head'>得分:</span><span class='span-text-head'>"+ aaaa.score+ "<br/>"+";</span>" +
+                        "<span class='span-text-head'>排名:</span><span class='span-text-head-small'>"+ aaaa.rank+ "</span><br/>"
+                } else if (data.data.action == "score") {
+                    aaaa = data.data.score
+                    console.log(document.getElementById('score').innerText)
+                    // score.innerHTML = document.getElementById('score').innerText + "<br/><span class='span-text-head' style='width: 50%'>用户:</span><span class='span-text'>"+ aaaa.userUuid +"</span>" +
+                    //     "<span class='span-text-head'>得分:</span><span class='span-text-head-small'>"+ aaaa.score+ "<br/>"+";</span><br/>"
+                    score.innerHTML = document.getElementById('score').innerText + "<br/>用户:"+ aaaa.userUuid +";得分:"+ aaaa.score + "<br/>";
+                } else {
+                    canSend = true
+                    room.innerHTML = data.data.room.roomUuid;
+                }
+
+            } else {
+                result.innerHTML = "出错了";
+            }
+        }
+
+
+    }
+    function checkSend() {
+        if (canSend) {
+            canSend = false
+            senddefault()
+        }
+    }
+    function send() {
+        if (!canSend) {
+            console.log("repea")
+        }
+        canSend = false
+        var msg = document.getElementById('content').value;
+        sock.send(msg);
+    }
+    function sendres(option, id) {
+        if (!canSend) {
+            console.log("repea")
+            return
+        }
+        canSend = false
+        var msg = {action: "next", "question":{questionId:id,questionOption:option, costTime:(Math.ceil(Math.random() * 9) + 1)}}
+        console.log(JSON.stringify(msg))
+        sock.send(JSON.stringify(msg));
+    }
+    function senddefault() {
+
+        console.log("recoon")
+        var msg = {action: "reconn"}
+        console.log(JSON.stringify(msg))
+        sock.send(JSON.stringify(msg));
+    }
+    function GetQueryValue1(queryName) {
+        var reg = new RegExp("(^|&)" + queryName + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if ( r != null ){
+            return decodeURI(r[2]);
+        }else{
+            return null;
+        }
+    }
+
+    lockReconnect = false
+    function reconnect() {
+        if(lockReconnect) return;
+        lockReconnect = true;
+        //没连接上会一直重连，设置延迟避免请求过多
+        setTimeout(function () {
+            createWebSocket()
+            lockReconnect = false;
+        }, 1000);
+    }
+    function conertToText(action) {
+        if (action == "match") {
+            return "匹配中.."
+        }
+
+        if (action == "start") {
+            return "匹配成功"
+        }
+
+        if (action == "next") {
+            return "答题中"
+        }
+        if (action == "end") {
+            return "答题结束"
+        }
+        if (action == "score") {
+            return "答题中"
+        }
+    }
+
+
+</script>
 </body>
 </html>
