@@ -18,37 +18,58 @@
 <![endif]-->
 
 <div class="layui-container">
-    <br>
+    <fieldset class="layui-elem-field layui-field-title">
+    <legend>FastBull BestBull</legend>
+    </fieldset>
+    <form class="layui-form" action="">
+        <div class="layui-form-item">
+            <label class="layui-form-label">当前玩家</label>
+            <div class="layui-form-mid layui-word-aux" id = "name"></div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label" style="">房间号</label>
+            <div class="layui-form-mid layui-word-aux" id = "room"></div>
 
-    <h1>FastBull BestBull</h1>
-    <br>
-    <div class="layui-row layui-col-space1">
-        <div class="layui-col-xs2">
-            房间
         </div>
-        <div class="layui-col-xs5" id="room">
+        <div class="layui-form-item">
+            <label class="layui-form-label">房房间状态</label>
+            <div class="layui-form-mid layui-word-aux" id = "result"></div>
 
         </div>
-        <div class="layui-col-xs2 " >
-            状态
-        </div>
-        <div class="layui-col-xs3" id="result">
-            初始化
-        </div>
+    </form>
+
     </div>
-    <div class="layui-row layui-col-space1">
-        <div class="layui-col-xs12">
-            得分
-        </div>
-    </div>
-    <div class="layui-row layui-col-space1" id ="score">
 
+    <div class="layui-row layui-col-space1" id ="rank" style="display: none">
+        <table class="layui-table" lay-skin="line" id="rankTable">
+            <colgroup>
+                <col width="150">
+                <col width="150">
+                <col width="200">
+            </colgroup>
+            <thead>
+            <tr>
+                <th>排名</th>
+                <th>得分</th>
+                <th>用户</th>
+            </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
     </div>
 </div>
 
 
-<div id="question" style="background-color: white; padding: 10px; margin: 20px; border-radius: 5px"></div>
-<div id="options" style="background-color: white; padding: 10px; margin: 20px; border-radius: 5px"></div>
+<blockquote style="display: none" class="layui-elem-quote layui-quote-nm" id="question" type="hidden" style="margin-top: 10px"></blockquote>
+<div id="options" style="background-color: white; padding: 10px; margin: 10px; border-radius: 5px">
+</div>
+
+<ul class="layui-timeline" id ="score">
+
+
+</ul>
 </body>
 
 <script src="./layui/layui.js"></script>
@@ -57,7 +78,9 @@
     var sock = null;
     var canSend = true
     // var wsuri = "ws://172.16.42.31:53743/eday/brain-storm/battle/" + GetQueryValue1("uuid");
-    var wsuri = "ws://localhost:9090/eday/brain-storm/battle/" + GetQueryValue1("uuid");
+    var wsuri = "ws://172.16.42.31:9091/eday/brain-storm/battle/" + GetQueryValue1("uuid");
+    var name2 = document.getElementById('name');
+    name2.innerHTML = GetQueryValue1("uuid")
     createWebSocket()
     sock.onopen = function() {
         result.innerHTML = "匹配中...";
@@ -68,8 +91,12 @@
     }
     function createWebSocket() {
         try {
+            console.log("start")
             sock = new WebSocket(wsuri);
+            console.log(sock)
             initEventHandle();
+            console.log(sock)
+
         } catch (e) {
             reconnect(url);
         }
@@ -82,21 +109,28 @@
         };
         sock.onerror = function () {
             console.log("error")
-
             // reconnect();
         };
+        sock.onopen = function () {
+            console.log("open")
+        }
         /**
          * 接收消息
          * @param e
          */
         sock.onmessage = function(e) {
+
             var result = document.getElementById('result');
             var room = document.getElementById('room');
             var question = document.getElementById('question');
             var options = document.getElementById('options');
             var score = document.getElementById('score');
+            var rank = document.getElementById('rank');
+            var rankTable = document.getElementById('rankTable');
+
             data = JSON.parse(e.data)
             console.log(data.data)
+
             if (data.code == 0) {
                 result.innerHTML = conertToText(data.data.action);
                 console.log(data.data.nextAction)
@@ -104,45 +138,55 @@
                     senddefault()
                 }
                 if (data.data.action == "next") {
-
                     canSend = true
 
                     room.innerHTML = data.data.room.roomUuid;
                     options.innerHTML = ""
                     question.innerHTML = ""
-                    question.innerHTML = "题目：" + data.data.question.questionDesc
+                    question.innerHTML =  data.data.question.questionDesc
+                    question.style.display = ""
+
                     questionData = data.data.question
                     list = questionData.questionOptionList
                     console.log(list)
-                    str = ""
                     if (list != null) {
                         for (let i = 0; i < list.length; i++) {
-                            str += "<div style='padding:10px;margin: 10px' onclick='sendres(\"" + list[i].questionOptionName + "\"," + questionData.questionId +")'>"
-                            str += list[i].questionOptionName + ":" + list[i].questionOptionDesc
-                            str += "</div>"
+                            str = '<div class="layui-row layui-col-space1" style="margin-top: 10px"><button type="button" class="layui-btn layui-btn-primary" onclick="sendres(this,\''+list[i].questionOptionName +'\', '+questionData.questionId+')">'+list[i].questionOptionName + '. ' + list[i].questionOptionDesc+'</button></div>'
+                            $("#options").append(str)
                         }
                     }
 
-                    console.log(str)
-                    options.innerHTML = str
                     score.innerHTML = "";
                     // intervalID =setInterval("checkSend()",10000);
                 } else if (data.data.action == "end") {
                     canSend = true
+                    document.getElementById("question").style.visibility="hiden";
+
 
                     score.innerHTML = "";
                     options.innerHTML = ""
                     question.innerHTML = ""
-                    aaaa = data.data.score
-                    console.log(document.getElementById('score').innerText)
-                    score.innerHTML = document.getElementById('score').innerText + "<span class='span-text-head' style='width: 50%;display: inline'>用户:</span><span class='span-text'>"+ aaaa.userUuid +"</span><span class='span-text-head'>得分:</span><span class='span-text-head'>"+ aaaa.score+ "<br/>"+";</span>" +
-                        "<span class='span-text-head'>排名:</span><span class='span-text-head-small'>"+ aaaa.rank+ "</span><br/>"
+                    list = data.data.rankList
+                    if (list != null) {
+                        for (let i = 0; i < list.length; i++) {
+                            // str  =  "<div class=\"layui-row layui-col-space1\"><div class=\"layui-col-xs2\">用户</div><div class=\"layui-col-xs2\">:"+ list[i].userUuid +"</div><div class=\"layui-col-xs2\">得分:</div><div class=\"layui-col-xs2\">"+ list[i].score + "</div><div class=\"layui-col-xs2\">排名:</div><div class=\"layui-col-xs2\">"+ list[i].rank + "</div></div>";
+                           str = "<tr>"
+                            str += "<td>"+list[i].rank+"</td>"
+                            str += "<td>"+list[i].score+"</td>"
+                            str += "<td>"+list[i].userUuid+"</td>"
+                           str += "</tr>"
+                            $("#rankTable").append(str)
+                        }
+                    }
+                    rank.style.display = ""
+                    question.style.display = "none"
+
                 } else if (data.data.action == "score") {
                     aaaa = data.data.score
                     console.log(document.getElementById('score').innerText)
                     // score.innerHTML = document.getElementById('score').innerText + "<br/><span class='span-text-head' style='width: 50%'>用户:</span><span class='span-text'>"+ aaaa.userUuid +"</span>" +
                     //     "<span class='span-text-head'>得分:</span><span class='span-text-head-small'>"+ aaaa.score+ "<br/>"+";</span><br/>"
-                    str  =  "<div class=\"layui-col-xs2\">\n用户</div><div class=\"layui-col-xs4\">\n:"+ aaaa.userUuid +"</div><div class=\"layui-col-xs2\">\n得分:</div><div class=\"layui-col-xs4\">\n"+ aaaa.score + "</div>";
+                   str = "<li class=\"layui-timeline-item\">\n        <i class=\"layui-icon layui-timeline-axis\"></i>\n        <div class=\"layui-timeline-content layui-text\">\n            <h3 class=\"layui-timeline-title\">玩家: "+aaaa.userUuid+"</h3>\n            <p>\n                得分: "+aaaa.score+"         </p>\n        </div>\n    </li>"
                     $("#score").append(str)
                 } else {
                     canSend = true
@@ -170,11 +214,13 @@
         var msg = document.getElementById('content').value;
         sock.send(msg);
     }
-    function sendres(option, id) {
+    function sendres(e, option, id) {
+
         if (!canSend) {
             console.log("repea")
             return
         }
+        e.className = "layui-btn layui-btn-normal"
         canSend = false
         var msg = {action: "next", "question":{questionId:id,questionOption:option, costTime:(Math.ceil(Math.random() * 9) + 1)}}
         console.log(JSON.stringify(msg))
@@ -199,7 +245,7 @@
 
     lockReconnect = false
     function reconnect() {
-        if(lockReconnect) return;
+        // if(lockReconnect) return;
         lockReconnect = true;
         //没连接上会一直重连，设置延迟避免请求过多
         setTimeout(function () {
@@ -220,7 +266,7 @@
             return "答题中"
         }
         if (action == "end") {
-            return "答题结束"
+            return "答题结束，刷新进入下一轮"
         }
         if (action == "score") {
             return "答题中"

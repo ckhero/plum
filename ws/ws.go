@@ -28,27 +28,57 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	//defer aaa()
-	int := 2
-	fmt.Println((int))
-	a := make(chan  bool)
-	b := make(chan  bool)
+	//int := 2
+	//fmt.Println((int))
+	//a := make(chan  bool)
+	//b := make(chan  bool)
+	//
+	//	tick := time.NewTicker(5 * time.Second)
+	//	go func(t *time.Ticker) {
+	//		for {
+	//			select {
+	//			case <-t.C:
+	//				fmt.Print("入队前的id：")
+	//				return
+	//			case <-a:
+	//				fmt.Print("nextDone")
+	//				return
+	//			}
+	//		}
+	//	}(tick)
+	//	time.Sleep(time.Second * 2)
+	//	a <- true
+	//	<-b
 
-		tick := time.NewTicker(5 * time.Second)
-		go func(t *time.Ticker) {
-			for {
-				select {
-				case <-t.C:
-					fmt.Print("入队前的id：")
-					return
-				case <-a:
-					fmt.Print("nextDone")
-					return
-				}
+	a := make(chan bool)
+	b := make(chan bool)
+	 c := make(chan bool)
+	go func() {
+		for  {
+			select {
+			case <-a:
+				fmt.Println("aaaaa")
+			case <-b:
+				fmt.Println("bbbbb")
 			}
-		}(tick)
-		time.Sleep(time.Second * 2)
+		}
+	}()
+	time.Sleep(time.Second * 1)
+	go func() {
 		a <- true
-		<-b
+	}()
+	go func() {
+		b <- true
+	}()
+
+	time.Sleep(time.Second * 1)
+	b <- true
+	time.Sleep(time.Second * 1)
+	a <- true
+	time.Sleep(time.Second * 1)
+	a <- true
+	b <- true
+	<- c
 	//args := []int64{22222}
 	//args = append(args, 333)
 	//args = append(args, 333)
